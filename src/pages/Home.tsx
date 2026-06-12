@@ -179,8 +179,8 @@ export function Home() {
               selectedTokenIndex={selectedTokenIndex}
               onSelectToken={setSelectedTokenIndex}
          />
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <h2 className="text-2xl font-semibold text-white">Attention Heatmap</h2>
+        <div className="mt-6">
+          
           <Heatmap />
           <AttentionGraph />
         </div>
