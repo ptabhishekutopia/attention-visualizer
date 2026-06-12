@@ -1,7 +1,6 @@
 # Attention Visualizer
 
-Attention Visualizer is a fully client-side educational app that explains Transformer self-attention with interactive visualizations. It runs entirely in the browser with Transformers.js and is ready for GitHub Pages deployment.
-
+Attention Visualizer is an educational app that explains Transformer self-attention with interactive visualizations. It runs entirely in the browser with Transformers.js.
 ## Features
 
 - React 19 + TypeScript + Vite

@@ -36,11 +36,11 @@ export function Heatmap() {
   const innerHeight = height - margin.top - margin.bottom;
 
   const xScale = useMemo(
-    () => d3.scaleBand<string>().domain(tokens).range([0, innerWidth]).padding(0.1),
+    () => d3.scaleBand().domain(tokens).range([0, innerWidth]).padding(0.1),
     [innerWidth, tokens],
   );
   const yScale = useMemo(
-    () => d3.scaleBand<string>().domain(tokens).range([0, innerHeight]).padding(0.1),
+    () => d3.scaleBand().domain(tokens).range([0, innerHeight]).padding(0.1),
     [innerHeight, tokens],
   );
   const colorScale = useMemo(
@@ -59,9 +59,9 @@ export function Heatmap() {
     const root = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
     const zoom = d3
-      .zoom<SVGSVGElement, unknown>()
+      .zoom()
       .scaleExtent([0.75, 8])
-      .on('zoom', (event) => {
+      .on('zoom', (event: any) => {
         root.attr('transform', `translate(${margin.left},${margin.top}) ${event.transform}`);
       });
 

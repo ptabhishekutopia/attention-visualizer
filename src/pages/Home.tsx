@@ -40,6 +40,11 @@ export function Home() {
     [attentions, selectedHead, selectedLayer],
   );
 
+  const currentInsights = useMemo(
+    () => buildTokenInsights(tokens, currentMatrix),
+    [currentMatrix, tokens],
+  );
+
   const selectedInsight = insights[selectedTokenIndex];
 
   async function handleVisualize() {
@@ -55,13 +60,12 @@ export function Home() {
 
     try {
       const result = await analyzeText(cleaned);
-      const derivedInsights = buildTokenInsights(result.tokens, result.attentions[result.selectedLayer ?? 0]?.[result.selectedHead ?? 0] ?? result.attentions[0]?.[0] ?? []);
       setResults({
         tokens: result.tokens,
         attentions: result.attentions,
         numLayers: result.numLayers,
         numHeads: result.numHeads,
-        insights: derivedInsights,
+        insights: buildTokenInsights(result.tokens, result.attentions[0]?.[0] ?? []),
       });
       setSelectedLayer(0);
       setSelectedHead(0);
@@ -143,7 +147,7 @@ export function Home() {
           <div className="space-y-6">
             <TokenInspector
               tokens={tokens}
-              insights={insights}
+              insights={currentInsights.length > 0 ? currentInsights : insights}
               selectedTokenIndex={selectedTokenIndex}
               onSelectToken={setSelectedTokenIndex}
             />
