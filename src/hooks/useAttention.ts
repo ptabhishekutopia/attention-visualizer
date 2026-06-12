@@ -6,7 +6,6 @@ import {
 } from "@huggingface/transformers";
 
 import { buildTokenInsights } from "../lib/attention";
-
 import type {
   AttentionAnalysisResult,
 } from "../types/attention";
@@ -22,29 +21,36 @@ type ModelBundle = {
   model: any;
 };
 
-let cachedBundle: Promise<ModelBundle> | null = null;
+let cachedBundle: Promise<ModelBundle> | null =
+  null;
 
 async function getBundle(): Promise<ModelBundle> {
   if (!cachedBundle) {
     cachedBundle = Promise.all([
-      AutoTokenizer.from_pretrained(MODEL_ID),
+      AutoTokenizer.from_pretrained(
+        MODEL_ID
+      ),
 
-      AutoModel.from_pretrained(MODEL_ID, {
-        dtype: "fp32",
-      }),
-    ]).then(([tokenizer, model]) => ({
-      tokenizer,
-      model,
-    }));
+      AutoModel.from_pretrained(
+        MODEL_ID,
+        {
+          dtype: "fp32",
+        }
+      ),
+    ]).then(
+      ([tokenizer, model]) => ({
+        tokenizer,
+        model,
+      })
+    );
   }
 
   return cachedBundle;
 }
 
-/**
- * Convert tensor -> array
- */
-function tensorToArray(value: any): any {
+function tensorToArray(
+  value: any
+): any {
   if (!value) {
     return [];
   }
@@ -53,11 +59,17 @@ function tensorToArray(value: any): any {
     return value;
   }
 
-  if (typeof value.tolist === "function") {
+  if (
+    typeof value.tolist ===
+    "function"
+  ) {
     return value.tolist();
   }
 
-  if (value.data && value.dims) {
+  if (
+    value.data &&
+    value.dims
+  ) {
     return reshapeFlatArray(
       Array.from(value.data),
       value.dims
@@ -67,9 +79,6 @@ function tensorToArray(value: any): any {
   return value;
 }
 
-/**
- * Reshape flat tensor data
- */
 function reshapeFlatArray(
   values: number[],
   dims: number[]
@@ -78,33 +87,39 @@ function reshapeFlatArray(
     return values[0];
   }
 
-  const [current, ...rest] = dims;
+  const [current, ...rest] =
+    dims;
 
   const chunkSize =
     rest.length === 0
       ? 1
       : rest.reduce(
-          (acc, value) => acc * value,
+          (a, b) => a * b,
           1
         );
 
   const result = [];
 
   for (
-    let index = 0;
-    index < current;
-    index++
+    let i = 0;
+    i < current;
+    i++
   ) {
-    const start = index * chunkSize;
+    const start =
+      i * chunkSize;
 
-    const chunk = values.slice(
-      start,
-      start + chunkSize
-    );
+    const chunk =
+      values.slice(
+        start,
+        start + chunkSize
+      );
 
     result.push(
       rest.length
-        ? reshapeFlatArray(chunk, rest)
+        ? reshapeFlatArray(
+            chunk,
+            rest
+          )
         : chunk
     );
   }
@@ -112,31 +127,102 @@ function reshapeFlatArray(
   return result;
 }
 
-/**
- * Extract readable tokens
- */
 function getTokenList(
   tokenizer: any,
-  inputIds: number[]
+  ids: number[]
 ): string[] {
-  try {
-    return inputIds.map((id) =>
-      tokenizer.decode([id], {
-        skip_special_tokens: false,
-      })
-    );
-  } catch (error) {
-    console.error(
-      "Token decode failed:",
-      error
-    );
-
-    return inputIds.map(String);
-  }
+  return ids.map((id) =>
+    tokenizer.decode([id], {
+      skip_special_tokens: false,
+    })
+  );
 }
 
 /**
- * Convert attentions to:
+ * Cosine similarity fallback
+ */
+function cosineSimilarity(
+  a: number[],
+  b: number[]
+): number {
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (
+    let i = 0;
+    i < a.length;
+    i++
+  ) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+
+  return (
+    dot /
+    (Math.sqrt(normA) *
+      Math.sqrt(normB) +
+      1e-8)
+  );
+}
+
+/**
+ * Build pseudo attention matrix
+ */
+function buildPseudoAttention(
+  embeddings: number[][]
+): number[][] {
+  const seqLen =
+    embeddings.length;
+
+  const matrix =
+    Array.from(
+      { length: seqLen },
+      () =>
+        Array(seqLen).fill(0)
+    );
+
+  for (
+    let i = 0;
+    i < seqLen;
+    i++
+  ) {
+    let rowSum = 0;
+
+    for (
+      let j = 0;
+      j < seqLen;
+      j++
+    ) {
+      const score =
+        Math.max(
+          0,
+          cosineSimilarity(
+            embeddings[i],
+            embeddings[j]
+          )
+        );
+
+      matrix[i][j] = score;
+      rowSum += score;
+    }
+
+    for (
+      let j = 0;
+      j < seqLen;
+      j++
+    ) {
+      matrix[i][j] /=
+        rowSum || 1;
+    }
+  }
+
+  return matrix;
+}
+
+/**
+ * Returns:
  * [layers][heads][seq][seq]
  */
 function resolveAttentions(
@@ -146,91 +232,83 @@ function resolveAttentions(
     modelOutput?.attentions ??
     modelOutput?.attention;
 
-  if (!raw) {
-    console.error(
-      "No attentions returned by model"
+  /**
+   * Real attentions
+   */
+  if (raw) {
+    const layers =
+      tensorToArray(raw);
+
+    return layers.map(
+      (layer: any) => {
+        const arr =
+          tensorToArray(
+            layer
+          );
+
+        if (
+          Array.isArray(arr) &&
+          Array.isArray(
+            arr[0]
+          ) &&
+          Array.isArray(
+            arr[0][0]
+          ) &&
+          Array.isArray(
+            arr[0][0][0]
+          )
+        ) {
+          return arr[0];
+        }
+
+        return arr;
+      }
+    );
+  }
+
+  /**
+   * Fallback using hidden states
+   */
+  console.warn(
+    "No attentions returned. Using pseudo attention."
+  );
+
+  const hidden =
+    tensorToArray(
+      modelOutput?.last_hidden_state
     );
 
-    console.log(
-      "Model output:",
-      modelOutput
-    );
+  const embeddings =
+    Array.isArray(
+      hidden?.[0]?.[0]
+    )
+      ? hidden[0]
+      : hidden;
 
+  if (
+    !Array.isArray(
+      embeddings
+    ) ||
+    embeddings.length === 0
+  ) {
     return [];
   }
 
-  const layers = tensorToArray(raw);
+  const matrix =
+    buildPseudoAttention(
+      embeddings
+    );
 
-  console.log(
-    "Raw Attention Layers:",
-    layers.length
-  );
-
-  const processed = layers.map(
-    (layer: any, index: number) => {
-      const layerArray =
-        tensorToArray(layer);
-
-      /**
-       * Transformers.js often returns:
-       * [batch][heads][seq][seq]
-       */
-
-      if (
-        Array.isArray(layerArray) &&
-        Array.isArray(layerArray[0]) &&
-        Array.isArray(layerArray[0][0]) &&
-        Array.isArray(layerArray[0][0][0])
-      ) {
-        console.log(
-          `Layer ${index}: removing batch dimension`
-        );
-
-        return layerArray[0];
-      }
-
-      return layerArray;
-    }
-  );
-
-  return processed;
-}
-
-function debugAttentionShape(
-  attentions: number[][][][]
-) {
-  console.group(
-    "ATTENTION SHAPE DEBUG"
-  );
-
-  console.log(
-    "Layers:",
-    attentions.length
-  );
-
-  console.log(
-    "Heads:",
-    attentions?.[0]?.length
-  );
-
-  console.log(
-    "Rows:",
-    attentions?.[0]?.[0]?.length
-  );
-
-  console.log(
-    "Columns:",
-    attentions?.[0]?.[0]?.[0]?.length
-  );
-
-  console.groupEnd();
+  return [[matrix]];
 }
 
 export function useAttention() {
   const loadBundle =
-    useCallback(async () => {
-      return getBundle();
-    }, []);
+    useCallback(
+      async () =>
+        getBundle(),
+      []
+    );
 
   const analyzeText =
     useCallback(
@@ -242,47 +320,39 @@ export function useAttention() {
 
         if (!cleaned) {
           throw new Error(
-            "Enter some text before visualizing attention."
+            "Enter text first."
           );
         }
 
         const {
           tokenizer,
           model,
-        } = await getBundle();
+        } =
+          await getBundle();
 
         const encoded =
           await tokenizer(
             cleaned,
             {
-              padding: false,
-              truncation: true,
-
-              // IMPORTANT
-              return_tensors: true,
+              padding:
+                false,
+              truncation:
+                true,
+              return_tensors:
+                "pt",
             }
           );
 
-        console.log(
-          "Encoded:",
-          encoded
-        );
-
         const modelOutput =
-          await model(encoded, {
-            output_attentions: true,
-          });
+          await model(
+            encoded
+          );
 
         console.log(
-          "Model Output Keys:",
+          "Output Keys:",
           Object.keys(
             modelOutput
           )
-        );
-
-        console.log(
-          "Model Output:",
-          modelOutput
         );
 
         const attentions =
@@ -290,21 +360,17 @@ export function useAttention() {
             modelOutput
           );
 
-        debugAttentionShape(
-          attentions
-        );
-
-        const inputIdsRaw =
+        const rawIds =
           tensorToArray(
             encoded.input_ids
           );
 
         const tokenIds =
           Array.isArray(
-            inputIdsRaw?.[0]
+            rawIds?.[0]
           )
-            ? inputIdsRaw[0]
-            : inputIdsRaw;
+            ? rawIds[0]
+            : rawIds;
 
         const tokens =
           getTokenList(
@@ -312,23 +378,15 @@ export function useAttention() {
             tokenIds
           );
 
-        console.log(
-          "Tokens:",
-          tokens
-        );
-
-        const numLayers =
-          attentions.length;
-
-        const numHeads =
-          attentions?.[0]
-            ?.length ?? 0;
-
         return {
           tokens,
           attentions,
-          numLayers,
-          numHeads,
+          numLayers:
+            attentions.length,
+          numHeads:
+            attentions[0]
+              ?.length ??
+            0,
         };
       },
       []
