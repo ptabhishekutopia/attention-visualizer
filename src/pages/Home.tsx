@@ -99,7 +99,7 @@ export function Home() {
                 Attention Visualizer
               </p>
               <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-               self-attention patterns in transformers, visualized.
+               Self-attention patterns, Visualized.
               </h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
                 Analyze a sentence locally in the browser with Transformers.js, then inspect the attention
