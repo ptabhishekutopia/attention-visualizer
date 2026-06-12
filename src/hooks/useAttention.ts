@@ -3,7 +3,8 @@ import { useCallback, useMemo } from "react";
 import {
   TransformerAttention,
   createEmbeddings,
-} from "../lib/transformer";
+  tokenize,
+} from "../lib/transformer.ts";
 
 import { buildTokenInsights } from "../lib/attention";
 
