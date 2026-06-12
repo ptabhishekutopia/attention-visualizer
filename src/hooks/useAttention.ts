@@ -4,7 +4,7 @@ import {
   TransformerAttention,
   createEmbeddings,
   tokenize,
-} from "../lib/transformer.ts";
+} from "../lib/tranformer";
 
 import { buildTokenInsights } from "../lib/attention";
 
