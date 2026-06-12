@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useAttention } from '@/hooks/useAttention';
-import { buildTokenInsights } from '@/lib/attention';
-import { useAttentionStore } from '@/stores/useAttentionStore';
-import { AttentionGraph } from '@/components/AttentionGraph';
-import { EducationalSection } from '@/components/EducationalSection';
-import { HeadSelector } from '@/components/HeadSelector';
-import { Heatmap } from '@/components/Heatmap';
-import { LayerSelector } from '@/components/LayerSelector';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { TextInput } from '@/components/TextInput';
-import { TokenInspector } from '@/components/TokenInspector';
+import { useAttention } from '../hooks/useAttention';
+import { buildTokenInsights } from '../lib/attention';
+import { useAttentionStore } from '../stores/useAttentionStore';
+import { AttentionGraph } from '../components/AttentionGraph';
+import { EducationalSection } from '../components/EducationalSection';
+import { Footer } from '../components/Footer';
+import { HeadSelector } from '../components/HeadSelector';
+import { Heatmap } from '../components/Heatmap';
+import { LayerSelector } from '../components/LayerSelector';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { TextInput } from '../components/TextInput';
+import { TokenInspector } from '../components/TokenInspector';
 
 export function Home() {
   const { analyzeText } = useAttention();
@@ -123,6 +124,28 @@ export function Home() {
           </div>
         </motion.section>
 
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.05 }}
+          className="mb-6 rounded-3xl border border-white/10 bg-slate-950/65 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-xl"
+        >
+          <p className="text-sm uppercase tracking-[0.3em] text-sky-300/80">Quick guide</p>
+          <h2 className="mt-2 text-2xl font-semibold text-white">How to use the visualizer</h2>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              '1. Enter a sentence and click Visualize attention.',
+              '2. Pick a layer and head to compare patterns.',
+              '3. Hover the heatmap or graph to inspect token relationships.',
+              '4. Adjust the threshold to show only stronger attention edges.',
+            ].map((step) => (
+              <div key={step} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-7 text-slate-300">
+                {step}
+              </div>
+            ))}
+          </div>
+        </motion.section>
+
         <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="space-y-6">
             <TextInput onVisualize={handleVisualize} isBusy={isAnalyzing} />
@@ -168,6 +191,8 @@ export function Home() {
         <div className="mt-6">
           <EducationalSection />
         </div>
+
+        <Footer />
 
         {currentMatrix.length === 0 && !isAnalyzing ? null : (
           <p className="mt-6 text-center text-sm text-slate-400">

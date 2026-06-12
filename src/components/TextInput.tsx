@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useAttentionStore } from '@/stores/useAttentionStore';
+import { useAttentionStore } from '../stores/useAttentionStore';
 
 interface TextInputProps {
   onVisualize: () => void;

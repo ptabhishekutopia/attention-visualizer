@@ -1,4 +1,4 @@
-import type { AttentionMatrix, AttentionTensor, TokenInsight } from '@/types/attention';
+import type { AttentionMatrix, AttentionTensor, TokenInsight } from '../types/attention';
 
 export function getLayerMatrix(attentions: AttentionTensor, layerIndex: number, headIndex: number) {
   return attentions[layerIndex]?.[headIndex] ?? [];

@@ -1,0 +1,28 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" rx="48" fill="#020617"/>
+  <circle cx="210" cy="150" r="128" fill="#0ea5e9" fill-opacity="0.18"/>
+  <circle cx="1000" cy="120" r="170" fill="#38bdf8" fill-opacity="0.12"/>
+  <circle cx="950" cy="500" r="220" fill="#22d3ee" fill-opacity="0.1"/>
+  <rect x="72" y="68" width="1056" height="494" rx="36" fill="#0f172a" fill-opacity="0.65" stroke="#ffffff" stroke-opacity="0.08"/>
+  <text x="108" y="176" fill="#e2e8f0" font-size="34" font-family="Inter, Arial, sans-serif" font-weight="700" letter-spacing="8">ATTENTION VISUALIZER</text>
+  <text x="108" y="244" fill="#f8fafc" font-size="74" font-family="Inter, Arial, sans-serif" font-weight="900">Transformer</text>
+  <text x="108" y="316" fill="#f8fafc" font-size="74" font-family="Inter, Arial, sans-serif" font-weight="900">Self-Attention</text>
+  <text x="108" y="388" fill="#cbd5e1" font-size="30" font-family="Inter, Arial, sans-serif" font-weight="500">Interactive heatmaps, graphs, and token insights in the browser.</text>
+  <g transform="translate(740 142)">
+    <rect x="0" y="0" width="320" height="236" rx="28" fill="#020617" fill-opacity="0.7" stroke="#38bdf8" stroke-opacity="0.2"/>
+    <g opacity="0.9">
+      <rect x="28" y="28" width="52" height="52" rx="12" fill="#155e75"/>
+      <rect x="92" y="28" width="52" height="52" rx="12" fill="#0ea5e9"/>
+      <rect x="156" y="28" width="52" height="52" rx="12" fill="#7dd3fc"/>
+      <rect x="220" y="28" width="52" height="52" rx="12" fill="#155e75"/>
+      <rect x="28" y="92" width="52" height="52" rx="12" fill="#0ea5e9"/>
+      <rect x="92" y="92" width="52" height="52" rx="12" fill="#38bdf8"/>
+      <rect x="156" y="92" width="52" height="52" rx="12" fill="#0ea5e9"/>
+      <rect x="220" y="92" width="52" height="52" rx="12" fill="#155e75"/>
+      <rect x="28" y="156" width="52" height="52" rx="12" fill="#7dd3fc"/>
+      <rect x="92" y="156" width="52" height="52" rx="12" fill="#0ea5e9"/>
+      <rect x="156" y="156" width="52" height="52" rx="12" fill="#38bdf8"/>
+      <rect x="220" y="156" width="52" height="52" rx="12" fill="#0ea5e9"/>
+    </g>
+  </g>
+</svg>

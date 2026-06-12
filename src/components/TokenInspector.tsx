@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { TokenInsight } from '@/types/attention';
+import type { TokenInsight } from '../types/attention';
 
 interface TokenInspectorProps {
   tokens: string[];

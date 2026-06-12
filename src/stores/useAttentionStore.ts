@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AttentionTensor, TokenInsight } from '@/types/attention';
+import type { AttentionTensor, TokenInsight } from '../types/attention';
 
 interface AttentionState {
   inputText: string;

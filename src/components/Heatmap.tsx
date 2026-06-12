@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { motion } from 'framer-motion';
-import { getLayerMatrix, normalizeScore } from '@/lib/attention';
-import { useAttentionStore } from '@/stores/useAttentionStore';
-import type { AttentionMatrix } from '@/types/attention';
+import { getLayerMatrix, normalizeScore } from '../lib/attention';
+import { useAttentionStore } from '../stores/useAttentionStore';
+import type { AttentionMatrix } from '../types/attention';
 
 interface HeatmapTooltip {
   x: number;

@@ -4,8 +4,8 @@ import {
   AutoTokenizer,
   env,
 } from '@huggingface/transformers';
-import { buildTokenInsights } from '@/lib/attention';
-import type { AttentionAnalysisResult } from '@/types/attention';
+import { buildTokenInsights } from '../lib/attention';
+import type { AttentionAnalysisResult } from '../types/attention';
 
 const MODEL_ID = 'Xenova/bert-base-uncased';
 

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { motion } from 'framer-motion';
-import { buildGraphEdges, getLayerMatrix, normalizeScore } from '@/lib/attention';
-import { useAttentionStore } from '@/stores/useAttentionStore';
+import { buildGraphEdges, getLayerMatrix, normalizeScore } from '../lib/attention';
+import { useAttentionStore } from '../stores/useAttentionStore';
 
 interface NodePosition {
   index: number;
