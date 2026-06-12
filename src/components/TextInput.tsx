@@ -31,14 +31,7 @@ export function TextInput({ onVisualize, isBusy }: TextInputProps) {
           <p className="text-sm uppercase tracking-[0.3em] text-sky-300/80">Input</p>
           <h2 className="mt-2 text-2xl font-semibold text-white">Paste a sentence to inspect self-attention</h2>
         </div>
-        <button
-          type="button"
-          onClick={onVisualize}
-          disabled={isBusy}
-          className="inline-flex items-center justify-center rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isBusy ? 'Analyzing...' : 'Visualize attention'}
-        </button>
+        
       </div>
 
       <label className="mb-3 block text-sm font-medium text-slate-300" htmlFor="attention-input">
@@ -57,6 +50,14 @@ export function TextInput({ onVisualize, isBusy }: TextInputProps) {
           {error}
         </p>
       ) : null}
+      <button
+          type="button"
+          onClick={onVisualize}
+          disabled={isBusy}
+          className="inline-flex items-center justify-center rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isBusy ? 'Analyzing...' : 'Visualize attention'}
+        </button>
     </motion.section>
   );
 }
