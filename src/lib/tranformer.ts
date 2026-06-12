@@ -1,7 +1,13 @@
 import * as tf from "@tensorflow/tfjs";
 
 export interface AttentionResult {
+  embeddings: number[][];
+  q: number[][];
+  k: number[][];
+  v: number[][];
+  attentionScores: number[][];
   attentionWeights: number[][];
+  output: number[][];
 }
 
 export class TransformerAttention {
@@ -15,15 +21,24 @@ export class TransformerAttention {
     this.embeddingDim = embeddingDim;
 
     this.Wq = tf.variable(
-      tf.randomNormal([embeddingDim, embeddingDim])
+      tf.randomNormal([
+        embeddingDim,
+        embeddingDim,
+      ])
     );
 
     this.Wk = tf.variable(
-      tf.randomNormal([embeddingDim, embeddingDim])
+      tf.randomNormal([
+        embeddingDim,
+        embeddingDim,
+      ])
     );
 
     this.Wv = tf.variable(
-      tf.randomNormal([embeddingDim, embeddingDim])
+      tf.randomNormal([
+        embeddingDim,
+        embeddingDim,
+      ])
     );
   }
 
@@ -36,22 +51,42 @@ export class TransformerAttention {
 
     const v = embeddings.matMul(this.Wv);
 
-    const scores = q
+    const attentionScores = q
       .matMul(k.transpose())
       .div(Math.sqrt(this.embeddingDim));
 
-    const weights = tf.softmax(scores);
+    const attentionWeights =
+      tf.softmax(attentionScores);
 
-    const result = {
+    const output =
+      attentionWeights.matMul(v);
+
+    const result: AttentionResult = {
+      embeddings:
+        (await embeddings.array()) as number[][],
+
+      q: (await q.array()) as number[][],
+
+      k: (await k.array()) as number[][],
+
+      v: (await v.array()) as number[][],
+
+      attentionScores:
+        (await attentionScores.array()) as number[][],
+
       attentionWeights:
-        (await weights.array()) as number[][],
+        (await attentionWeights.array()) as number[][],
+
+      output:
+        (await output.array()) as number[][],
     };
 
     q.dispose();
     k.dispose();
     v.dispose();
-    scores.dispose();
-    weights.dispose();
+    attentionScores.dispose();
+    attentionWeights.dispose();
+    output.dispose();
 
     return result;
   }
@@ -66,31 +101,23 @@ export class TransformerAttention {
 export async function createEmbeddings(
   tokenCount: number,
   embeddingDim = 64
-) {
+): Promise<tf.Tensor2D> {
   return tf.randomNormal([
     tokenCount,
     embeddingDim,
   ]);
 }
-export interface AttentionResult {
-  embeddings: number[][];
-  q: number[][];
-  k: number[][];
-  v: number[][];
-  attentionScores: number[][];
-  attentionWeights: number[][];
-  output: number[][];
-}
 
-export interface AttentionAnalysisResult {
-  tokens: string[];
-  attentions: number[][][]; // [layer][head][token][token]
-  numLayers: number;
-  numHeads: number;
-}
-
-export function tokenize(text: string): string[] {
-  return text
-    .split(/\s+/)
-    .filter((token) => token.length > 0);
+export function tokenize(
+  text: string
+): string[] {
+  return [
+    "[CLS]",
+    ...text
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean),
+    "[SEP]",
+  ];
 }

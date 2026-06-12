@@ -12,19 +12,6 @@ import type {
   AttentionAnalysisResult,
 } from "../types/attention";
 
-function tokenize(
-  text: string
-): string[] {
-  return [
-    "[CLS]",
-    ...text
-      .toLowerCase()
-      .trim()
-      .split(/\s+/),
-    "[SEP]",
-  ];
-}
-
 export function useAttention() {
   const loadBundle =
     useCallback(async () => {
@@ -67,11 +54,12 @@ export function useAttention() {
         embeddings.dispose();
         transformer.dispose();
 
-        const attentions = [
+        const attentions: number[][][][] =
           [
-            result.attentionWeights,
-          ],
-        ];
+            [
+              result.attentionWeights,
+            ],
+          ];
 
         return {
           tokens,
