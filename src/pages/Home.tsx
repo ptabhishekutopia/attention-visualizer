@@ -99,18 +99,13 @@ export function Home() {
                 Attention Visualizer
               </p>
               <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-                Explore how Transformer models focus on different words through self-attention.
+               self-attention patterns in transformers, visualized.
               </h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
                 Analyze a sentence locally in the browser with Transformers.js, then inspect the attention
                 patterns through an interactive heatmap, graph, and token inspector.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3 text-sm text-slate-300">
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">React 19</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">TypeScript</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">Vite + GitHub Pages</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">Client-side only</span>
-              </div>
+    
             </div>
 
             <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6 shadow-glow">
@@ -148,7 +143,7 @@ export function Home() {
 
         <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="space-y-6">
-            <TextInput onVisualize={handleVisualize} isBusy={isAnalyzing} />
+            
 
             <section className="rounded-3xl border border-white/10 bg-slate-950/65 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -168,12 +163,7 @@ export function Home() {
           </div>
 
           <div className="space-y-6">
-            <TokenInspector
-              tokens={tokens}
-              insights={currentInsights.length > 0 ? currentInsights : insights}
-              selectedTokenIndex={selectedTokenIndex}
-              onSelectToken={setSelectedTokenIndex}
-            />
+            <TextInput onVisualize={handleVisualize} isBusy={isAnalyzing} />
             <section className="rounded-3xl border border-white/10 bg-slate-950/65 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
               <p className="text-sm uppercase tracking-[0.3em] text-sky-300/80">Processing</p>
               <div className="mt-4 flex min-h-24 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-6">
@@ -182,8 +172,15 @@ export function Home() {
             </section>
           </div>
         </div>
-
+        
+        <TokenInspector
+              tokens={tokens}
+              insights={currentInsights.length > 0 ? currentInsights : insights}
+              selectedTokenIndex={selectedTokenIndex}
+              onSelectToken={setSelectedTokenIndex}
+         />
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <h2 className="text-2xl font-semibold text-white">Attention Heatmap</h2>
           <Heatmap />
           <AttentionGraph />
         </div>
