@@ -1,13 +1,17 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from "react";
 import {
   AutoModel,
   AutoTokenizer,
   env,
-} from '@huggingface/transformers';
-import { buildTokenInsights } from '../lib/attention';
-import type { AttentionAnalysisResult } from '../types/attention';
+} from "@huggingface/transformers";
 
-const MODEL_ID = 'Xenova/bert-base-uncased';
+import { buildTokenInsights } from "../lib/attention";
+
+import type {
+  AttentionAnalysisResult,
+} from "../types/attention";
+
+const MODEL_ID = "Xenova/bert-base-uncased";
 
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
@@ -20,130 +24,326 @@ type ModelBundle = {
 
 let cachedBundle: Promise<ModelBundle> | null = null;
 
-async function getBundle() {
+async function getBundle(): Promise<ModelBundle> {
   if (!cachedBundle) {
     cachedBundle = Promise.all([
       AutoTokenizer.from_pretrained(MODEL_ID),
-      AutoModel.from_pretrained(MODEL_ID),
-    ]).then(([tokenizer, model]) => ({ tokenizer, model }));
+
+      AutoModel.from_pretrained(MODEL_ID, {
+        dtype: "fp32",
+      }),
+    ]).then(([tokenizer, model]) => ({
+      tokenizer,
+      model,
+    }));
   }
 
   return cachedBundle;
 }
 
-function reshapeFlatArray(values: ArrayLike<number>, dims: number[]): any {
+/**
+ * Convert tensor -> array
+ */
+function tensorToArray(value: any): any {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value.tolist === "function") {
+    return value.tolist();
+  }
+
+  if (value.data && value.dims) {
+    return reshapeFlatArray(
+      Array.from(value.data),
+      value.dims
+    );
+  }
+
+  return value;
+}
+
+/**
+ * Reshape flat tensor data
+ */
+function reshapeFlatArray(
+  values: number[],
+  dims: number[]
+): any {
   if (dims.length === 0) {
     return values[0];
   }
 
-  const [dimension, ...rest] = dims;
-  const chunkSize = rest.reduce((product, current) => product * current, 1);
-  const reshaped: any[] = [];
+  const [current, ...rest] = dims;
 
-  for (let index = 0; index < dimension; index += 1) {
-    const offset = index * chunkSize;
-    const slice = Array.from(values).slice(offset, offset + chunkSize);
-    reshaped.push(rest.length > 0 ? reshapeFlatArray(slice, rest) : slice);
+  const chunkSize =
+    rest.length === 0
+      ? 1
+      : rest.reduce(
+          (acc, value) => acc * value,
+          1
+        );
+
+  const result = [];
+
+  for (
+    let index = 0;
+    index < current;
+    index++
+  ) {
+    const start = index * chunkSize;
+
+    const chunk = values.slice(
+      start,
+      start + chunkSize
+    );
+
+    result.push(
+      rest.length
+        ? reshapeFlatArray(chunk, rest)
+        : chunk
+    );
   }
 
-  return reshaped;
+  return result;
 }
 
-function tensorToArray(tensor: any) {
-  if (!tensor) {
+/**
+ * Extract readable tokens
+ */
+function getTokenList(
+  tokenizer: any,
+  inputIds: number[]
+): string[] {
+  try {
+    return inputIds.map((id) =>
+      tokenizer.decode([id], {
+        skip_special_tokens: false,
+      })
+    );
+  } catch (error) {
+    console.error(
+      "Token decode failed:",
+      error
+    );
+
+    return inputIds.map(String);
+  }
+}
+
+/**
+ * Convert attentions to:
+ * [layers][heads][seq][seq]
+ */
+function resolveAttentions(
+  modelOutput: any
+): number[][][][] {
+  const raw =
+    modelOutput?.attentions ??
+    modelOutput?.attention;
+
+  if (!raw) {
+    console.error(
+      "No attentions returned by model"
+    );
+
+    console.log(
+      "Model output:",
+      modelOutput
+    );
+
     return [];
   }
 
-  if (Array.isArray(tensor)) {
-    return tensor;
-  }
+  const layers = tensorToArray(raw);
 
-  if (typeof tensor.tolist === 'function') {
-    return tensor.tolist();
-  }
+  console.log(
+    "Raw Attention Layers:",
+    layers.length
+  );
 
-  if (tensor.dims && tensor.data) {
-    return reshapeFlatArray(tensor.data, tensor.dims);
-  }
+  const processed = layers.map(
+    (layer: any, index: number) => {
+      const layerArray =
+        tensorToArray(layer);
 
-  return tensor;
+      /**
+       * Transformers.js often returns:
+       * [batch][heads][seq][seq]
+       */
+
+      if (
+        Array.isArray(layerArray) &&
+        Array.isArray(layerArray[0]) &&
+        Array.isArray(layerArray[0][0]) &&
+        Array.isArray(layerArray[0][0][0])
+      ) {
+        console.log(
+          `Layer ${index}: removing batch dimension`
+        );
+
+        return layerArray[0];
+      }
+
+      return layerArray;
+    }
+  );
+
+  return processed;
 }
 
-function getTokenList(tokenizer: any, text: string, tokenIds: number[]) {
-  if (typeof tokenizer.tokenize === 'function') {
-    const tokens = tokenizer.tokenize(text, { add_special_tokens: true });
-    if (Array.isArray(tokens) && tokens.length > 0) {
-      return tokens;
-    }
-  }
+function debugAttentionShape(
+  attentions: number[][][][]
+) {
+  console.group(
+    "ATTENTION SHAPE DEBUG"
+  );
 
-  if (typeof tokenizer.batch_decode === 'function') {
-    const decoded = tokenizer.batch_decode([tokenIds], {
-      skip_special_tokens: false,
-      clean_up_tokenization_spaces: false,
-    });
-    if (Array.isArray(decoded) && decoded[0]) {
-      return decoded[0].split(/\s+/).filter(Boolean);
-    }
-  }
+  console.log(
+    "Layers:",
+    attentions.length
+  );
 
-  if (typeof tokenizer.decode === 'function') {
-    const decoded = tokenizer.decode(tokenIds, {
-      skip_special_tokens: false,
-      clean_up_tokenization_spaces: false,
-    });
-    return decoded.split(/\s+/).filter(Boolean);
-  }
+  console.log(
+    "Heads:",
+    attentions?.[0]?.length
+  );
 
-  return tokenIds.map((tokenId) => String(tokenId));
-}
+  console.log(
+    "Rows:",
+    attentions?.[0]?.[0]?.length
+  );
 
-function resolveAttentions(modelOutput: any) {
-  const rawAttentions = modelOutput?.attentions ?? modelOutput?.attention ?? [];
-  return tensorToArray(rawAttentions).map((layer: any) => tensorToArray(layer));
+  console.log(
+    "Columns:",
+    attentions?.[0]?.[0]?.[0]?.length
+  );
+
+  console.groupEnd();
 }
 
 export function useAttention() {
-  const loadBundle = useCallback(async () => getBundle(), []);
+  const loadBundle =
+    useCallback(async () => {
+      return getBundle();
+    }, []);
 
-  const analyzeText = useCallback(async (text: string): Promise<AttentionAnalysisResult> => {
-    const cleaned = text.trim();
+  const analyzeText =
+    useCallback(
+      async (
+        text: string
+      ): Promise<AttentionAnalysisResult> => {
+        const cleaned =
+          text.trim();
 
-    if (!cleaned) {
-      throw new Error('Enter some text before visualizing attention.');
-    }
+        if (!cleaned) {
+          throw new Error(
+            "Enter some text before visualizing attention."
+          );
+        }
 
-    const { tokenizer, model } = await getBundle();
-    const encoded = await tokenizer(cleaned, {
-      padding: false,
-      truncation: true,
-      return_tensor: true,
-    });
+        const {
+          tokenizer,
+          model,
+        } = await getBundle();
 
-    const modelOutput = await model(encoded, { output_attentions: true });
-    const attentions = resolveAttentions(modelOutput) as number[][][][];
-    const tokenIds = Array.isArray(encoded.input_ids)
-      ? encoded.input_ids
-      : tensorToArray(encoded.input_ids)?.[0] ?? [];
-    const tokens = getTokenList(tokenizer, cleaned, tokenIds);
+        const encoded =
+          await tokenizer(
+            cleaned,
+            {
+              padding: false,
+              truncation: true,
 
-    const numLayers = attentions.length;
-    const numHeads = attentions[0]?.length ?? 0;
+              // IMPORTANT
+              return_tensors: true,
+            }
+          );
 
-    return {
-      tokens,
-      attentions,
-      numLayers,
-      numHeads,
-    };
-  }, []);
+        console.log(
+          "Encoded:",
+          encoded
+        );
+
+        const modelOutput =
+          await model(encoded, {
+            output_attentions: true,
+          });
+
+        console.log(
+          "Model Output Keys:",
+          Object.keys(
+            modelOutput
+          )
+        );
+
+        console.log(
+          "Model Output:",
+          modelOutput
+        );
+
+        const attentions =
+          resolveAttentions(
+            modelOutput
+          );
+
+        debugAttentionShape(
+          attentions
+        );
+
+        const inputIdsRaw =
+          tensorToArray(
+            encoded.input_ids
+          );
+
+        const tokenIds =
+          Array.isArray(
+            inputIdsRaw?.[0]
+          )
+            ? inputIdsRaw[0]
+            : inputIdsRaw;
+
+        const tokens =
+          getTokenList(
+            tokenizer,
+            tokenIds
+          );
+
+        console.log(
+          "Tokens:",
+          tokens
+        );
+
+        const numLayers =
+          attentions.length;
+
+        const numHeads =
+          attentions?.[0]
+            ?.length ?? 0;
+
+        return {
+          tokens,
+          attentions,
+          numLayers,
+          numHeads,
+        };
+      },
+      []
+    );
 
   return useMemo(
     () => ({
       loadBundle,
       analyzeText,
-      buildInsights: buildTokenInsights,
+      buildInsights:
+        buildTokenInsights,
     }),
-    [analyzeText, loadBundle],
+    [
+      analyzeText,
+      loadBundle,
+    ]
   );
 }
